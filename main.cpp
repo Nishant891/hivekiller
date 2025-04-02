@@ -44,12 +44,18 @@ int crosshair_y = CROSSHAIR_DISTANCE;
 
 vector<Bullet> bullets;
 
-map<int, Grid> rectangles;
+vector<Grid> rectangles;
 
-bool checkCollision(float x, float y){
-    for(const auto &rectangle : rectangles){
-        if(CheckCollisionCircleRec(Vector2{x, y}, 10, Rectangle{rectangle.second.x, rectangle.second.y, rectangle.second.width, rectangle.second.height})){
-            rectangles.erase(rectangle.first);
+vector<pair<int, int>> pulsarPattern = {
+    {2, 0}, {3, 0}, {4, 0}, {8, 0}, {9, 0}, {10, 0}, {0, 2}, {5, 2}, {7, 2}, {12, 2}, {0, 3}, {5, 3}, {7, 3}, {12, 3}, {0, 4}, {5, 4}, {7, 4}, {12, 4}, {2, 5}, {3, 5}, {4, 5}, {8, 5}, {9, 5}, {10, 5}, {2, 7}, {3, 7}, {4, 7}, {8, 7}, {9, 7}, {10, 7}, {0, 8}, {5, 8}, {7, 8}, {12, 8}, {0, 9}, {5, 9}, {7, 9}, {12, 9}, {0, 10}, {5, 10}, {7, 10}, {12, 10}, {2, 12}, {3, 12}, {4, 12}, {8, 12}, {9, 12}, {10, 12}};
+
+bool checkCollision(float x, float y)
+{
+    for (auto it = rectangles.begin(); it != rectangles.end(); ++it)
+    {
+        if (CheckCollisionCircleRec(Vector2{x, y}, 10, Rectangle{it->x, it->y, it->width, it->height}))
+        {
+            rectangles.erase(it);
             return true;
         }
     }
@@ -60,14 +66,20 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "First person shooter"); // Initialize window and OpenGL context
     SetTargetFPS(60);
 
-    for(int i = 0; i < 100; i++){
+    Texture2D background = LoadTexture("assets/bg.jpg");
+
+    int cellSize = 14; // Adjust based on grid scale
+
+    for (const auto &cell : pulsarPattern)
+    {
         Grid rectangle;
-        rectangle.x = GetRandomValue(screenWidth/2, screenWidth-24);
-        rectangle.y = GetRandomValue(screenHeight/2, screenHeight-24);
-        rectangle.width = 24;
-        rectangle.height = 24;
-        cout<<"rectangle: "<<rectangle.x + rectangle.y<<endl;
-        rectangles[rectangle.x + rectangle.y] = rectangle;
+        rectangle.x = screenWidth / 2 + cell.first * cellSize;
+        rectangle.y = screenHeight / 2 + cell.second * cellSize;
+        rectangle.width = cellSize;
+        rectangle.height = cellSize;
+
+        cout << "rectangle: " << rectangle.x + rectangle.y << endl;
+        rectangles.push_back(rectangle);
     }
 
     std::vector<Texture2D> frames;
@@ -139,30 +151,37 @@ int main(void)
 
         BeginDrawing();
         ClearBackground(BLACK);
-
+        /*DrawTexturePro(
+            background,
+            (Rectangle){0, 0, (float)background.width, (float)background.height}, // Source rectangle
+            (Rectangle){0, 0, (float)screenWidth, (float)screenHeight},           // Destination rectangle
+            (Vector2){0, 0},                                                      // Origin (top-left corner)
+            0.0f,                                                                 // Rotation
+            WHITE                                                                 // Tint
+        );*/
         Rectangle sourceRec = {-25, -25, (float)spacecraft.width, (float)spacecraft.height};
         Rectangle destRec = {(float)x, (float)y, (float)spacecraft.width + 7, (float)spacecraft.height};
         Vector2 origin = {(float)spacecraft.width / 2, (float)spacecraft.height / 2};
         DrawTexturePro(spacecraft, sourceRec, destRec, origin, rotation - 45, WHITE);
 
-        DrawCircle(crosshair_x, crosshair_y, 5, GREEN);
+        DrawCircle(crosshair_x, crosshair_y, 2, GREEN);
 
         for (const auto &bullet : bullets)
         {
             if (bullet.active)
             {
-                DrawCircle(bullet.bullet_x, bullet.bullet_y, 10, RED);
+                DrawCircle(bullet.bullet_x, bullet.bullet_y, 6, GREEN);
             }
         }
 
         for (const auto &rectangle : rectangles)
         {
-            DrawRectangle(rectangle.second.x, rectangle.second.y, rectangle.second.width, rectangle.second.height, GREEN);
+            DrawRectangle(rectangle.x, rectangle.y, rectangle.width, rectangle.height, RED);
         }
 
         EndDrawing();
     }
-
+    UnloadTexture(background);
     for (Texture2D &tex : frames)
         UnloadTexture(tex);
 
